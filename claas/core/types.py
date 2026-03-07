@@ -32,6 +32,13 @@ class TrainingConfig:
     max_grad_norm: float = 1.0
     kl_reg_weight: float = 0.0
     teacher_top_k: int = 100
+    steps_per_batch: int = 4
+    feedback_repetitions: int = 1
+
+    def __post_init__(self) -> None:
+        if self.steps_per_batch < 1:
+            msg = f"steps_per_batch must be >= 1, got {self.steps_per_batch}"
+            raise ValueError(msg)
 
 
 class SDPOLossInput(BaseModel):
