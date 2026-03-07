@@ -13,7 +13,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import quote
@@ -47,8 +46,15 @@ from claas.training.engine.tinker.state import (
     lora_exists as state_lora_exists,
     set_tinker_path,
 )
+from claas.training.engine.tinker.types import (
+    BehaviorSignal,
+    PreparedSample,
+    ScalarBehavior,
+    ScalarPreparedSample,
+    TopKBehavior,
+    TopKPreparedSample,
+)
 from claas.training.gjs import (
-    SequenceTopK,
     compute_topk_gjs,
     extract_token_logprobs,
     slice_completion_topk,
@@ -60,59 +66,6 @@ logger = logging.getLogger(__name__)
 # Adaptive KL scaling defaults (from continualcode reference).
 _TARGET_ADV_ABS_MEAN = 0.03
 _MAX_KL_GAIN = 4.0
-
-
-# ------------------------------------------------------------------
-# Discriminated-union sample/behavior types
-# ------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class SampleCore:
-    """Fields shared across both scalar and top-K prepared samples."""
-
-    full_tokens: list[int]
-    input_tokens: list[int]
-    target_tokens: list[int]
-    prompt_len: int
-    completion_len: int
-    teacher_scored_text: str
-
-
-@dataclass(frozen=True)
-class ScalarPreparedSample(SampleCore):
-    """Sample with scalar teacher logprobs (current approach)."""
-
-    teacher_logprobs: list[float]
-
-
-@dataclass(frozen=True)
-class TopKPreparedSample(SampleCore):
-    """Sample with top-K teacher distributions (GJS approach)."""
-
-    teacher_logprobs: list[float]
-    teacher_topk: SequenceTopK
-
-
-PreparedSample = ScalarPreparedSample | TopKPreparedSample
-
-
-@dataclass(frozen=True)
-class ScalarBehavior:
-    """Scalar student logprobs for IS correction."""
-
-    logprobs: list[float]
-
-
-@dataclass(frozen=True)
-class TopKBehavior:
-    """Top-K student distributions + scalar logprobs for IS correction."""
-
-    logprobs: list[float]
-    topk: SequenceTopK
-
-
-BehaviorSignal = ScalarBehavior | TopKBehavior
 
 
 class TinkerTrainingEngine(TrainingEngine):
