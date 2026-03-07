@@ -323,11 +323,12 @@ class TinkerTrainingEngine(TrainingEngine):
             if step_idx < steps_per_batch - 1:
                 student_sampling = await training_client.save_weights_and_get_sampling_client_async()
                 if use_topk:
-                    behavior_signals = await _compute_student_topk_for_batch(
+                    topk_behaviors = await _compute_student_topk_for_batch(
                         student_sampling=student_sampling,
                         prepared_samples=prepared_samples,
                         top_k=teacher_top_k,
                     )
+                    behavior_signals = list[BehaviorSignal](topk_behaviors)
                 else:
                     scalar_logprobs = await _compute_student_logprobs_for_batch(
                         student_sampling=student_sampling,
@@ -433,15 +434,6 @@ async def _prepare_sample_inputs(
     teacher_full = T.ModelInput.from_ints(teacher_full_tokens)
     teacher_scored_text = tokenizer.decode(teacher_full_tokens, skip_special_tokens=False)
 
-    core_kwargs = dict(
-        full_tokens=full_tokens,
-        input_tokens=input_tokens,
-        target_tokens=target_tokens,
-        prompt_len=prompt_len,
-        completion_len=completion_len,
-        teacher_scored_text=teacher_scored_text,
-    )
-
     initial_behavior = ScalarBehavior(logprobs=list(sample.response_logprobs))
 
     if use_topk:
@@ -460,7 +452,12 @@ async def _prepare_sample_inputs(
         )
 
         prepared: PreparedSample = TopKPreparedSample(
-            **core_kwargs,
+            full_tokens=full_tokens,
+            input_tokens=input_tokens,
+            target_tokens=target_tokens,
+            prompt_len=prompt_len,
+            completion_len=completion_len,
+            teacher_scored_text=teacher_scored_text,
             teacher_logprobs=teacher_logprobs,
             teacher_topk=teacher_topk,
         )
@@ -474,7 +471,12 @@ async def _prepare_sample_inputs(
         )
 
         prepared = ScalarPreparedSample(
-            **core_kwargs,
+            full_tokens=full_tokens,
+            input_tokens=input_tokens,
+            target_tokens=target_tokens,
+            prompt_len=prompt_len,
+            completion_len=completion_len,
+            teacher_scored_text=teacher_scored_text,
             teacher_logprobs=teacher_logprobs,
         )
 
