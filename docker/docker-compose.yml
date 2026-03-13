@@ -82,6 +82,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.init
+      args:
+        EXTRAS: local
     command:
       [
         "--config-name",

@@ -12,12 +12,21 @@ WORKDIR /app
 # Copy only dependency files first for layer caching
 COPY pyproject.toml uv.lock ./
 
-# Install core dependencies only (no extras)
-RUN uv sync --frozen --no-install-project --no-dev
+# Install dependencies (EXTRAS build arg adds --extra local for GPU profiles)
+ARG EXTRAS=""
+RUN if [ -n "$EXTRAS" ]; then \
+      uv sync --frozen --no-install-project --no-dev --extra "$EXTRAS"; \
+    else \
+      uv sync --frozen --no-install-project --no-dev; \
+    fi
 
 # Copy source and install just the project (deps already cached)
 COPY . .
-RUN uv sync --frozen --no-dev
+RUN if [ -n "$EXTRAS" ]; then \
+      uv sync --frozen --no-dev --extra "$EXTRAS"; \
+    else \
+      uv sync --frozen --no-dev; \
+    fi
 
 ENV PATH="/app/.venv/bin:$PATH"
 
